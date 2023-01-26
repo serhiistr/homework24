@@ -110,3 +110,38 @@ def logout_view(request):
     if request.user.is_authenticated:
         logout(request)
     return redirect("/")
+
+
+def minus_to_cart(request, id):
+    product = Product.objects.get(id=id)
+    if request.session.get("cart", False):
+        is_product_already_added = False
+        for el in request.session.get("cart", {"products": [], "total": 0})["products"]:
+            if el["id"] == id:
+                el["count"] = el["count"] - 1
+                request.session["cart"]["total"] = request.session["cart"]["total"] - product.price
+                el["price"] = el["price"] - product.price
+                is_product_already_added = True
+        if not is_product_already_added:
+            request.session["cart"]["total"] = request.session["cart"]["total"] - product.price
+            request.session["cart"]["products"].append({
+                "id": product.id,
+                "title": product.title,
+                "price": product.price,
+                "count": 1
+            })
+    else:
+        request.session["cart"] = {
+            "products": [],
+            "total": 0
+        }
+        request.session["cart"]["total"] = product.price
+        request.session["cart"]["products"].append({
+            "id": product.id,
+            "title": product.title,
+            "description": product.description,
+            "price": product.price,
+            "count": 1
+        })
+    request.session.modified = True
+    return redirect("/cart")
